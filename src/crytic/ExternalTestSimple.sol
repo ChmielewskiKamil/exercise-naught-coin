@@ -5,9 +5,11 @@ import {NaughtCoin} from "src/NaughtCoin.sol";
 
 contract ExternalTestSimple {
     NaughtCoin public naughtCoin;
+    address player;
 
     constructor() {
-        naughtCoin = new NaughtCoin(msg.sender);
+        player = msg.sender;
+        naughtCoin = new NaughtCoin(player);
     }
 
     function always_true() public pure {
@@ -19,6 +21,9 @@ contract ExternalTestSimple {
     }
 
     function sender_balance_is_equal_to_initial_supply() public {
-        assert(naughtCoin.balanceOf(msg.sender) == naughtCoin.INITIAL_SUPPLY());
+        uint256 currentTime = block.timestamp;
+        if (currentTime < naughtCoin.timeLock()) {
+            assert(naughtCoin.balanceOf(player) == naughtCoin.INITIAL_SUPPLY());
+        }
     }
 }
