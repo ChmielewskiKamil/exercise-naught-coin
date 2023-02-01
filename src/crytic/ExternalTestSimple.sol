@@ -8,6 +8,7 @@ contract ExternalTestSimple {
     address player;
     address bob;
 
+    event Player(address player);
     event AssertionFailed(uint256 amount);
 
     constructor() {
@@ -26,9 +27,10 @@ contract ExternalTestSimple {
         assert(address(naughtCoin) != address(0));
     }
 
-    function sender_balance_is_equal_to_initial_supply() public {
+    function player_balance_is_equal_to_initial_supply() public {
         uint256 currentTime = block.timestamp;
         if (currentTime < naughtCoin.timeLock()) {
+            emit Player(player);
             assert(naughtCoin.balanceOf(player) == naughtCoin.INITIAL_SUPPLY());
         }
     }
@@ -74,7 +76,8 @@ contract ExternalTestSimple {
         uint256 playerBalanceBefore = naughtCoin.balanceOf(player);
         uint256 bobBalanceBefore = naughtCoin.balanceOf(bob);
         uint256 currentTime = block.timestamp;
-        if (currentTime < naughtCoin.timeLock()) {
+        if (currentTime <= naughtCoin.timeLock()) {
+            emit Player(player);
             // actions
             bool success1 = naughtCoin.transferFrom(player, bob, amount);
             if (success1) {
@@ -85,6 +88,24 @@ contract ExternalTestSimple {
                 naughtCoin.balanceOf(player) == playerBalanceBefore &&
                     naughtCoin.balanceOf(bob) == bobBalanceBefore
             );
+        }
+    }
+
+    function no_free_tokens_in_transfer_from(uint256 amount) public {
+        // pre-conditions
+        uint256 playerBalanceBefore = naughtCoin.balanceOf(player);
+        uint256 bobBalanceBefore = naughtCoin.balanceOf(bob);
+        uint256 currentTime = block.timestamp;
+        if (amount <= playerBalanceBefore) {
+            bool success1 = naughtCoin.transferFrom(player, bob, amount);
+            if (success1) {
+                // post-conditions
+                assert(
+                    naughtCoin.balanceOf(player) ==
+                        playerBalanceBefore - amount &&
+                        naughtCoin.balanceOf(bob) == bobBalanceBefore + amount
+                );
+            }
         }
     }
 }
